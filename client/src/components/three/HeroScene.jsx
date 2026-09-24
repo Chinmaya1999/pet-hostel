@@ -168,13 +168,24 @@ function TennisBall(props) {
   );
 }
 
-function Rig() {
+/**
+ * The canvas fills the whole hero, but the pets must stay framed inside `frame` — the box
+ * (in canvas pixels) where the old card used to be. We aim the camera at that box and use a
+ * view offset so the rest of the canvas simply shows more of the room around it.
+ */
+function Rig({ frame }) {
   useFrame((state) => {
-    const aspect = state.size.width / state.size.height;
+    const { camera, size } = state;
+    const f = frame?.current;
+    const stage = f && f.w > 0 && f.h > 0 ? f : { x: 0, y: 0, w: size.width, h: size.height };
+    const aspect = stage.w / stage.h;
     state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, Math.max(5.55, 5.75 / aspect), 0.1);
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, state.pointer.x * 0.3, 0.04);
     state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, 0.55 + state.pointer.y * 0.12, 0.04);
     state.camera.lookAt(0, -0.3, -0.3);
+    camera.aspect = aspect;
+    camera.setViewOffset(stage.w, stage.h, -stage.x, -stage.y, size.width, size.height);
+    camera.updateProjectionMatrix();
   });
   return null;
 }
@@ -190,7 +201,7 @@ function Studio() {
   );
 }
 
-function Scene({ muted, onReady }) {
+function Scene({ muted, onReady, frame }) {
   const [dog, cat, bunny, parrot] = ['dog', 'cat', 'bunny', 'parrot'].map((id) => PETS.find((p) => p.id === id));
   return (
     <>
@@ -219,12 +230,12 @@ function Scene({ muted, onReady }) {
       {PETS.map((pet) => (
         <Pet key={pet.id} pet={pet} muted={muted} onReady={onReady} />
       ))}
-      <Rig />
+      <Rig frame={frame} />
     </>
   );
 }
 
-export default function HeroScene({ muted = false }) {
+export default function HeroScene({ muted = false, frame }) {
   const [loaded, setLoaded] = useState(() => new Set());
   const ready = loaded.size === PETS.length;
   const handleReady = useCallback((id) => setLoaded((s) => (s.has(id) ? s : new Set(s).add(id))), []);
@@ -233,14 +244,14 @@ export default function HeroScene({ muted = false }) {
     <div className="h-full w-full transition-opacity duration-700" style={{ opacity: ready ? 1 : 0, background: STAGE_BG }}>
       <Canvas
         shadows
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         camera={{ position: [0, 0.6, 6.4], fov: 40 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
         onCreated={({ gl }) => gl.setClearColor(STAGE_BG, 1)}
         style={{ background: STAGE_BG }}
       >
         <Suspense fallback={null}>
-          <Scene muted={muted} onReady={handleReady} />
+          <Scene muted={muted} onReady={handleReady} frame={frame} />
         </Suspense>
       </Canvas>
     </div>

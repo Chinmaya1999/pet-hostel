@@ -10,8 +10,10 @@ import * as THREE from 'three';
 
 export const FLOOR_Y = -1.3;
 const BACK_Z = -2.1;
-const SIDE_X = 2.75;
-const WALL_TOP = 2.9;
+const SIDE_X = 2.75; // right-hand wall of the pets' corner
+const LEFT_X = -16; // the room runs on far to the left, behind the hero text
+const FRONT_Z = 9; // floor reaches past the camera
+const WALL_TOP = 6;
 const WAINSCOT_TOP = -0.35;
 
 function canvasTexture(w, h, draw, { repeat, anisotropy = 8 } = {}) {
@@ -67,7 +69,7 @@ function useFloorTexture() {
           ctx.fillStyle = 'rgba(90,55,30,0.45)';
           ctx.fillRect(0, row * rh, w, 3);
         }
-      }, { repeat: [2.2, 2.2] }),
+      }, { repeat: [1, 1] }),
     []
   );
 }
@@ -98,7 +100,7 @@ function useWallpaper() {
           ctx.arc(x, y, 3, 0, Math.PI * 2);
           ctx.fill();
         });
-      }, { repeat: [7, 4] }),
+      }, { repeat: [1, 1] }),
     []
   );
 }
@@ -205,14 +207,23 @@ function Plaque({ title, subtitle, color = '#FF6B4A', width = 0.9, height = 0.32
   );
 }
 
-function Walls() {
-  const paper = useWallpaper();
-  const sideDepth = 5.2;
-  const sideZ = BACK_Z + sideDepth / 2;
+/** Texture tiled at a fixed real-world density, so paper and planks look the same on every surface. */
+function useTiled(base, width, height, unitsPerTile) {
+  return useMemo(() => {
+    const t = base.clone();
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(width / unitsPerTile, height / unitsPerTile);
+    t.needsUpdate = true;
+    return t;
+  }, [base, width, height, unitsPerTile]);
+}
+
+function Wall({ position, rotation, width, shade = 1 }) {
   const wallH = WALL_TOP - WAINSCOT_TOP;
   const wainH = WAINSCOT_TOP - FLOOR_Y;
-  const wall = (key, pos, rot, width, shade = 1) => (
-    <group key={key} position={pos} rotation={rot}>
+  const paper = useTiled(useWallpaper(), width, wallH, 0.8);
+  return (
+    <group position={position} rotation={rotation}>
       <mesh position={[0, WAINSCOT_TOP + wallH / 2, 0]} receiveShadow>
         <planeGeometry args={[width, wallH]} />
         <meshStandardMaterial map={paper} color={new THREE.Color(shade, shade, shade)} roughness={1} />
@@ -232,20 +243,26 @@ function Walls() {
       </mesh>
     </group>
   );
+}
+
+function Walls() {
+  const backW = SIDE_X - LEFT_X;
+  const sideD = FRONT_Z - BACK_Z;
   return (
     <>
-      {wall('back', [0, 0, BACK_Z], [0, 0, 0], SIDE_X * 2)}
-      {wall('left', [-SIDE_X, 0, sideZ], [0, Math.PI / 2, 0], sideDepth, 0.93)}
-      {wall('right', [SIDE_X, 0, sideZ], [0, -Math.PI / 2, 0], sideDepth, 0.93)}
+      <Wall position={[(SIDE_X + LEFT_X) / 2, 0, BACK_Z]} rotation={[0, 0, 0]} width={backW} />
+      <Wall position={[SIDE_X, 0, BACK_Z + sideD / 2]} rotation={[0, -Math.PI / 2, 0]} width={sideD} shade={0.93} />
     </>
   );
 }
 
 function Floor() {
-  const planks = useFloorTexture();
+  const w = SIDE_X - LEFT_X;
+  const d = FRONT_Z - BACK_Z;
+  const planks = useTiled(useFloorTexture(), w, d, 1.7);
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, FLOOR_Y, BACK_Z + 2.6]} receiveShadow>
-      <planeGeometry args={[SIDE_X * 2, 5.2]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[(SIDE_X + LEFT_X) / 2, FLOOR_Y, BACK_Z + d / 2]} receiveShadow>
+      <planeGeometry args={[w, d]} />
       <meshStandardMaterial map={planks} color="#E6CDB2" roughness={0.6} />
     </mesh>
   );
@@ -637,6 +654,98 @@ function WallArt() {
   );
 }
 
+
+/** Reception side of the room — sits behind the hero text, so it stays simple and calm. */
+function Lobby() {
+  const wood = '#B77B52';
+  return (
+    <group>
+      {/* front door */}
+      <group position={[-4.3, 0, BACK_Z + 0.02]}>
+        <mesh position={[0, FLOOR_Y + 1.25, 0]}>
+          <boxGeometry args={[1.3, 2.5, 0.06]} />
+          <meshStandardMaterial color="#FFFFFF" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, FLOOR_Y + 1.2, 0.04]}>
+          <boxGeometry args={[1.1, 2.35, 0.05]} />
+          <meshStandardMaterial color="#FF8A6B" roughness={0.7} />
+        </mesh>
+        {[0.55, -0.35].map((y) => (
+          <mesh key={y} position={[0, FLOOR_Y + 1.2 + y, 0.075]}>
+            <boxGeometry args={[0.8, 0.7, 0.02]} />
+            <meshStandardMaterial color="#FF9A7D" roughness={0.7} />
+          </mesh>
+        ))}
+        <mesh position={[0.42, FLOOR_Y + 1.15, 0.1]}>
+          <sphereGeometry args={[0.05, 16, 16]} />
+          <meshStandardMaterial color="#F2B936" metalness={1} roughness={0.25} />
+        </mesh>
+      </group>
+      <Plaque title="Reception" subtitle="Check-in 8am – 8pm" color="#FF6B4A" width={1.1} height={0.34} position={[-4.3, FLOOR_Y + 2.85, BACK_Z + 0.03]} />
+
+      {/* leash hooks */}
+      <group position={[-2.85, 0.6, BACK_Z + 0.03]}>
+        <mesh>
+          <boxGeometry args={[0.9, 0.1, 0.05]} />
+          <meshStandardMaterial color={wood} roughness={0.7} />
+        </mesh>
+        {[
+          [-0.3, '#FF6B4A'],
+          [0, '#3DD9B3'],
+          [0.3, '#8B7CF6'],
+        ].map(([x, c]) => (
+          <group key={x} position={[x, -0.05, 0.05]}>
+            <mesh position={[0, -0.32, 0]}>
+              <boxGeometry args={[0.035, 0.6, 0.012]} />
+              <meshStandardMaterial color={c} roughness={0.8} />
+            </mesh>
+            <mesh position={[0, -0.65, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.06, 0.015, 8, 20]} />
+              <meshStandardMaterial color={c} roughness={0.8} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+
+      {/* waiting bench */}
+      <group position={[-6.4, FLOOR_Y, BACK_Z + 0.35]}>
+        <RoundedBox args={[1.8, 0.12, 0.5]} radius={0.04} position={[0, 0.48, 0]} castShadow>
+          <meshStandardMaterial color={wood} roughness={0.7} />
+        </RoundedBox>
+        <RoundedBox args={[1.7, 0.1, 0.44]} radius={0.05} position={[0, 0.59, 0]}>
+          <meshStandardMaterial color="#FFB547" roughness={1} />
+        </RoundedBox>
+        {[-0.8, 0.8].map((x) => (
+          <mesh key={x} position={[x, 0.22, 0]}>
+            <boxGeometry args={[0.08, 0.44, 0.42]} />
+            <meshStandardMaterial color={wood} roughness={0.7} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* second window + gallery frames */}
+      <Window position={[-8.6, 0.75, BACK_Z + 0.01]} />
+      {[
+        [-6.9, 1.0, 0.55, 0.7],
+        [-6.1, 1.15, 0.45, 0.45],
+      ].map(([x, y, w, h]) => (
+        <group key={x} position={[x, y, BACK_Z + 0.03]}>
+          <mesh>
+            <boxGeometry args={[w + 0.08, h + 0.08, 0.04]} />
+            <meshStandardMaterial color={wood} roughness={0.6} />
+          </mesh>
+          <mesh position={[0, 0, 0.025]}>
+            <planeGeometry args={[w, h]} />
+            <meshStandardMaterial color={x < -6.5 ? '#FFE3D3' : '#DDEFE4'} roughness={0.9} />
+          </mesh>
+        </group>
+      ))}
+      <Plant position={[-10.6, FLOOR_Y, BACK_Z + 0.5]} scale={1.3} />
+      <Plant position={[-5.2, FLOOR_Y, BACK_Z + 0.45]} scale={0.8} />
+    </group>
+  );
+}
+
 /** Everything except the pets themselves. `perch` = parrot position (top of bar). */
 export default function HostelRoom({ dog, cat, bunny, perch }) {
   return (
@@ -649,6 +758,7 @@ export default function HostelRoom({ dog, cat, bunny, perch }) {
       <Plaque title="Wuffelune" subtitle="Pet hostel · est. 2019" width={1.5} height={0.46} position={[0.55, 1.45, BACK_Z + 0.03]} />
       <Plaque title="Bruno" subtitle="Garden suite · 01" color="#FF6B4A" width={0.72} height={0.25} position={[dog[0] + 0.45, 0.1, BACK_Z + 0.03]} />
       <WallArt />
+      <Lobby />
 
       <DogSuite position={[dog[0], FLOOR_Y, dog[2]]} />
       <CatSuite position={[cat[0], FLOOR_Y, cat[2]]} />
