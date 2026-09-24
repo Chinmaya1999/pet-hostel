@@ -1,0 +1,10 @@
+3D models — all CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/). Commercial use allowed; authors must be credited.
+Optimised with gltf-transform (meshopt geometry + webp textures).
+
+labrador.glb  "Labrador Dog" by kenchoo — https://sketchfab.com/3d-models/labrador-dog-1f56cfbab07e4fe49b5d9e521c82073a
+cat.glb       "Sleeping Cat On The Bed 1 - 3D scan" by Alben Tan — https://sketchfab.com/3d-models/sleeping-cat-on-the-bed-1-3d-scan-ae07a741be6944e8ba5e2657069d3aaf
+bunny.glb     "rabbit animation (cute)" by dinomaster — https://sketchfab.com/3d-models/rabbit-animation-cute-94c09e85fa8f410b9459e56505e417d7
+parrot.glb    "Parrot" by SDPM Esare — https://sketchfab.com/3d-models/parrot-eedf3a271ae742129282ff74ab8603f9
+
+Sounds (../sounds) — Mixkit Sound Effects Free License (https://mixkit.co/license/#sfxFree):
+dog-bark.mp3 "Dog barking twice" · cat-meow.mp3 "Sweet kitty meow" · bird-chirp.mp3 "Double little bird chirp" · bunny-squeak.mp3 "Mouse squeak"

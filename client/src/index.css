@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #fff8f0;
+  --color-cream-2: #fdeee0;
+  --color-ink: #1f1535;
+  --color-ink-2: #3b2f55;
+  --color-muted: #6f6485;
+  --color-coral: #ff6b4a;
+  --color-coral-dark: #e8502f;
+  --color-sun: #ffb547;
+  --color-mint: #3dd9b3;
+  --color-lilac: #8b7cf6;
+  --color-sky: #5ab8ff;
+  --color-rose: #ff7eb6;
+
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-4xl: 2rem;
+  --radius-5xl: 2.75rem;
+
+  --shadow-soft: 0 10px 40px -12px rgb(31 21 53 / 0.18);
+  --shadow-glow: 0 20px 60px -15px rgb(255 107 74 / 0.55);
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-blob: blob 14s ease-in-out infinite;
+  --animate-spin-slow: spin 18s linear infinite;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(3deg); }
+  }
+  @keyframes blob {
+    0%, 100% { border-radius: 42% 58% 62% 38% / 45% 42% 58% 55%; transform: translate(0, 0) scale(1); }
+    33% { border-radius: 60% 40% 35% 65% / 55% 60% 40% 45%; transform: translate(20px, -24px) scale(1.06); }
+    66% { border-radius: 38% 62% 55% 45% / 62% 38% 62% 38%; transform: translate(-18px, 14px) scale(0.96); }
+  }
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: auto;
+  }
+  body {
+    @apply bg-cream text-ink font-sans;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-variation-settings: "SOFT" 100, "opsz" 96;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: var(--color-coral);
+    color: white;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-coral);
+    outline-offset: 3px;
+    border-radius: 12px;
+  }
+}
+
+@utility container-x {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+@utility btn {
+  @apply relative inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-bold transition-all duration-300 select-none disabled:cursor-not-allowed disabled:opacity-60;
+}
+@utility btn-primary {
+  @apply btn bg-coral text-white shadow-glow hover:bg-coral-dark hover:-translate-y-0.5;
+}
+@utility btn-dark {
+  @apply btn bg-ink text-cream hover:bg-ink-2 hover:-translate-y-0.5;
+}
+@utility btn-ghost {
+  @apply btn border-2 border-ink/10 bg-white/60 text-ink backdrop-blur hover:border-ink/25 hover:bg-white;
+}
+@utility glass {
+  @apply border border-white/60 bg-white/55 backdrop-blur-xl;
+}
+@utility card {
+  @apply rounded-4xl border border-ink/5 bg-white shadow-soft;
+}
+@utility eyebrow {
+  @apply inline-flex items-center gap-2 rounded-full bg-coral/10 px-4 py-1.5 text-xs font-extrabold tracking-[0.18em] text-coral uppercase;
+}
+@utility input {
+  @apply w-full rounded-2xl border-2 border-ink/10 bg-white px-4 py-3 text-sm font-medium text-ink placeholder:text-muted/60 transition focus:border-coral focus:ring-4 focus:ring-coral/15 focus:outline-none;
+}
+@utility label {
+  @apply mb-1.5 block text-xs font-bold tracking-wide text-ink-2 uppercase;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold;
+}
+@utility text-gradient {
+  background: linear-gradient(100deg, #FF5A36 0%, #F2346E 50%, #7B5CF5 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  padding-right: 0.08em;
+  margin-right: -0.08em;
+}
+
+/* Film-grain overlay for a tactile, premium feel */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.mask-fade-x {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* Lenis smooth scroll */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
