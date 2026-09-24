@@ -2,10 +2,10 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'rea
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Environment, Html, Lightformer, useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import HostelRoom, { FLOOR_Y } from './HostelRoom';
 
 // Photoreal CC-BY-4.0 models and Mixkit sounds — full credits in /public/models/CREDITS.txt
-export const STAGE_BG = '#FFE9D6';
-const FLOOR_Y = -1.3;
+export const STAGE_BG = '#FFF1E4';
 
 /** The hostel's residents. `size` = longest side in world units; `rot` = yaw so each faces the camera nicely;
  *  `seat` = fraction of the model's height to sink below `pos` (for pets whose lowest point isn't their feet). */
@@ -16,11 +16,11 @@ export const PETS = [
   },
   {
     id: 'cat', name: 'Mochi', breed: 'Tabby cat', url: '/models/cat.glb', sound: '/sounds/cat-meow.mp3',
-    bubble: 'Meow~ 🐱', size: 1.55, pos: [0.95, FLOOR_Y, 1.05], rot: -0.35, hop: 0.12, breathe: true,
+    bubble: 'Meow~ 🐱', size: 1.45, pos: [0.95, FLOOR_Y + 0.16, 1.05], rot: -0.35, hop: 0.12, breathe: true,
   },
   {
     id: 'bunny', name: 'Pepper', breed: 'Bunny', url: '/models/bunny.glb', sound: '/sounds/bunny-squeak.mp3',
-    bubble: 'Squeak! 🐰', size: 1.0, pos: [-1.3, FLOOR_Y, 1.0], rot: 1.97, hop: 0.35, breathe: true,
+    bubble: 'Squeak! 🐰', size: 1.0, pos: [-1.1, FLOOR_Y, 1.0], rot: 1.97, hop: 0.35, breathe: true,
   },
   {
     id: 'parrot', name: 'Kiwi', breed: 'Macaw', url: '/models/parrot.glb', sound: '/sounds/bird-chirp.mp3',
@@ -153,48 +153,10 @@ function Pet({ pet, muted, onReady }) {
   );
 }
 
-/** Wooden perch for the parrot; `position` is the top of the bar. */
-function Perch({ position }) {
-  const top = position[1];
-  const pole = top - FLOOR_Y;
-  return (
-    <group position={[position[0], 0, position[2]]}>
-      <mesh position={[0, FLOOR_Y + pole / 2, 0]}>
-        <cylinderGeometry args={[0.04, 0.055, pole, 16]} />
-        <meshStandardMaterial color="#8B5A3C" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, top, 0]} rotation={[0, 0, Math.PI / 2]}>
-        <cylinderGeometry args={[0.035, 0.035, 0.8, 16]} />
-        <meshStandardMaterial color="#8B5A3C" roughness={0.8} />
-      </mesh>
-      <mesh position={[0, FLOOR_Y + 0.03, 0]}>
-        <cylinderGeometry args={[0.3, 0.34, 0.06, 32]} />
-        <meshStandardMaterial color="#6E4530" roughness={0.9} />
-      </mesh>
-    </group>
-  );
-}
-
-/** Round cushion bed under the dog. */
-function DogBed({ position }) {
-  return (
-    <group position={position}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <circleGeometry args={[1.1, 48]} />
-        <meshStandardMaterial color="#F4C7A6" roughness={1} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
-        <torusGeometry args={[1.1, 0.13, 20, 64]} />
-        <meshStandardMaterial color="#E8906B" roughness={1} />
-      </mesh>
-    </group>
-  );
-}
-
 function TennisBall(props) {
   return (
     <group {...props}>
-      <mesh>
+      <mesh castShadow>
         <sphereGeometry args={[0.13, 40, 40]} />
         <meshPhysicalMaterial color="#D4E83A" roughness={1} sheen={1} sheenRoughness={0.8} sheenColor="#F4FF9A" />
       </mesh>
@@ -206,78 +168,13 @@ function TennisBall(props) {
   );
 }
 
-/**
- * Full-screen gradient backdrop drawn by a shader: warm sun disc, slow dashed ring and a soft floor.
- * No textures (no Safari speckle) and fully opaque (the canvas never composites or flashes).
- */
-function Backdrop() {
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: { uAspect: { value: 1 }, uTime: { value: 0 } },
-        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 1.0, 1.0); }',
-        fragmentShader: `
-          varying vec2 vUv; uniform float uAspect; uniform float uTime;
-          vec3 hex(float r, float g, float b){ return vec3(r, g, b) / 255.0; }
-          void main(){
-            vec3 bg = hex(255., 233., 214.);
-            vec2 p = (vUv - vec2(0.5, 0.6)) * vec2(uAspect, 1.0);
-            float d = length(p);
-            vec3 col = mix(hex(255., 181., 71.), hex(255., 138., 92.), smoothstep(0.0, 0.26, d));
-            col = mix(col, bg, smoothstep(0.24, 0.5, d));
-            float ring = smoothstep(0.004, 0.0, abs(d - 0.36));
-            float ang = atan(p.y, p.x) + uTime * 0.15;
-            ring *= step(0.35, fract(ang * 6.0 / 6.2832));
-            col = mix(col, vec3(1.0), ring * 0.7);
-            float floorMask = smoothstep(0.36, 0.22, vUv.y);
-            col = mix(col, hex(248., 214., 190.), floorMask * 0.75);
-            gl_FragColor = vec4(col, 1.0);
-          }`,
-        depthWrite: false,
-        depthTest: false,
-      }),
-    []
-  );
-  useFrame(({ size, clock }) => {
-    material.uniforms.uAspect.value = size.width / size.height;
-    material.uniforms.uTime.value = clock.elapsedTime;
-  });
-  return (
-    <mesh frustumCulled={false} renderOrder={-1000} material={material}>
-      <planeGeometry args={[2, 2]} />
-    </mesh>
-  );
-}
-
-/** Soft blob shadows under each pet. */
-function GroundShadows() {
-  const texture = useMemo(() => {
-    const c = document.createElement('canvas');
-    c.width = c.height = 128;
-    const ctx = c.getContext('2d');
-    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, 'rgba(80,40,20,0.5)');
-    g.addColorStop(0.55, 'rgba(80,40,20,0.18)');
-    g.addColorStop(1, 'rgba(80,40,20,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, 128, 128);
-    return new THREE.CanvasTexture(c);
-  }, []);
-  return PETS.map(({ id, pos, size }) => (
-    <mesh key={id} rotation={[-Math.PI / 2, 0, 0]} position={[pos[0], FLOOR_Y + 0.005, id === 'parrot' ? pos[2] : pos[2]]} scale={[size * 0.9, size * 0.5, 1]}>
-      <circleGeometry args={[0.5, 40]} />
-      <meshBasicMaterial map={texture} transparent depthWrite={false} toneMapped={false} />
-    </mesh>
-  ));
-}
-
 function Rig() {
   useFrame((state) => {
     const aspect = state.size.width / state.size.height;
-    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, Math.max(5.9, 6.1 / aspect), 0.1);
+    state.camera.position.z = THREE.MathUtils.lerp(state.camera.position.z, Math.max(5.55, 5.75 / aspect), 0.1);
     state.camera.position.x = THREE.MathUtils.lerp(state.camera.position.x, state.pointer.x * 0.3, 0.04);
-    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, 0.9 + state.pointer.y * 0.15, 0.04);
-    state.camera.lookAt(0, -0.45, 0);
+    state.camera.position.y = THREE.MathUtils.lerp(state.camera.position.y, 0.55 + state.pointer.y * 0.12, 0.04);
+    state.camera.lookAt(0, -0.3, -0.3);
   });
   return null;
 }
@@ -285,7 +182,7 @@ function Rig() {
 /** Studio light built from light-formers — nothing to download, so no loading flash. */
 function Studio() {
   return (
-    <Environment resolution={256} frames={1}>
+    <Environment resolution={256} frames={1} environmentIntensity={0.45}>
       <Lightformer form="rect" intensity={3} position={[0, 4, 3]} scale={[8, 4, 1]} color="#FFF4E6" />
       <Lightformer form="rect" intensity={1.6} position={[-5, 1, 0]} rotation-y={Math.PI / 2} scale={[6, 3, 1]} color="#FFD9C2" />
       <Lightformer form="rect" intensity={1.2} position={[5, 1, -1]} rotation-y={-Math.PI / 2} scale={[6, 3, 1]} color="#D9E6FF" />
@@ -294,19 +191,30 @@ function Studio() {
 }
 
 function Scene({ muted, onReady }) {
-  const parrot = PETS.find((p) => p.id === 'parrot');
+  const [dog, cat, bunny, parrot] = ['dog', 'cat', 'bunny', 'parrot'].map((id) => PETS.find((p) => p.id === id));
   return (
     <>
-      <Backdrop />
+      <color attach="background" args={[STAGE_BG]} />
       <Studio />
-      <ambientLight intensity={0.3} />
-      <directionalLight position={[3, 6, 4]} intensity={1.5} />
-      <directionalLight position={[-4, 2, -3]} intensity={0.7} color="#FFB08A" />
+      <hemisphereLight args={['#FFF4E6', '#B98B62', 0.45]} />
+      <directionalLight
+        position={[2.5, 5, 4]}
+        intensity={1.35}
+        color="#FFE9CC"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0005}
+        shadow-normalBias={0.02}
+        shadow-camera-left={-4}
+        shadow-camera-right={4}
+        shadow-camera-top={4}
+        shadow-camera-bottom={-4}
+      />
+      {/* warm light spilling in from the window */}
+      <pointLight position={[-1.35, 0.8, -1.4]} intensity={6} distance={5} color="#FFD9A0" />
 
-      <DogBed position={[-0.15, FLOOR_Y, -0.55]} />
-      <Perch position={parrot.pos} />
-      <TennisBall position={[0.05, FLOOR_Y + 0.13, 1.35]} />
-      <GroundShadows />
+      <HostelRoom dog={dog.pos} cat={cat.pos} bunny={bunny.pos} perch={parrot.pos} />
+      <TennisBall position={[0.35, FLOOR_Y + 0.13, 1.55]} />
 
       {PETS.map((pet) => (
         <Pet key={pet.id} pet={pet} muted={muted} onReady={onReady} />
@@ -324,6 +232,7 @@ export default function HeroScene({ muted = false }) {
   return (
     <div className="h-full w-full transition-opacity duration-700" style={{ opacity: ready ? 1 : 0, background: STAGE_BG }}>
       <Canvas
+        shadows
         dpr={[1, 1.75]}
         camera={{ position: [0, 0.6, 6.4], fov: 40 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}

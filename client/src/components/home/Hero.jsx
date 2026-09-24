@@ -122,7 +122,7 @@ export default function Hero({ onPlayVideo }) {
             initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 1.5, type: 'spring' }}
-            className="absolute top-[10%] border border-white bg-white/95 left-0 flex animate-float items-center gap-3 rounded-3xl p-3 pr-5 shadow-soft sm:left-[-4%]"
+            className="absolute top-[-1%] border border-white bg-white/95 left-0 hidden sm:flex animate-float items-center gap-3 rounded-3xl p-3 pr-5 shadow-soft sm:left-[-4%]"
           >
             <img src={IMAGES.golden.replace('w=1200', 'w=120')} alt="" className="h-12 w-12 rounded-2xl object-cover" />
             <div>
